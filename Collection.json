@@ -1,0 +1,137 @@
+{
+  "info": {
+    "_postman_id": "5bc432e9-6832-4c02-9833-a6f4d65d60c5",
+    "name": "Automated_Auth_Framework",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "8229785"
+  },
+  "item": [
+    {
+      "name": "User Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var data = pm.response.json();\r",
+              "if (data.token) {\r",
+              "pm.environment.set(\"Token\", data.token);\r",
+              "console.log(\"Token saved successfully!\");\r",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"eve.holt@reqres.in\",\r\n \"password\": \"cityslicka\"\r\n }\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseurl}}/login",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Resource",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "key",
+            "value": "{{Token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"John Doe\", \r\n\"job\": \"Developer\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseurl}}/users",
+          "host": [
+            "{{baseurl}}"
+          ],
+          "path": [
+            "users"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          "\r",
+          "// validating the token locally before hitting the server.\r",
+          "const token = pm.environment.get(\"Token\");\r",
+          "if (token && token.includes('.')) {\r",
+          "    try {\r",
+          "        // 1. Extract the Payload (the second part of the JWT)\r",
+          "        const base64Url = token.split('.')[1];\r",
+          "        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');        \r",
+          "        // 2. Decode Base64 to JSON string\r",
+          "        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {\r",
+          "            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);\r",
+          "        }).join(''));\r",
+          "        const payload = JSON.parse(jsonPayload);\r",
+          "        // 3. Compare 'exp' (seconds) with Current Time (milliseconds)\r",
+          "        const currentTime = Math.floor(Date.now() / 1000);\r",
+          "        if (payload.exp && currentTime >= payload.exp) {\r",
+          "            console.warn(\"SESSION EXPIRED: The JWT in your environment has timed out.\");\r",
+          "            console.log(\"Next Step: Run the 'Login' request to refresh the token.\");\r",
+          "        } else {\r",
+          "            const minutesLeft = Math.round((payload.exp - currentTime) / 60);\r",
+          "            console.log(`SESSION VALID: Token expires in approx ${minutesLeft} minutes.`);\r",
+          "        }\r",
+          "    } catch (e) {\r",
+          "        console.error(\"❌ TOKEN ERROR: The environment variable 'Token' is not a valid JWT.\");\r",
+          "    }\r",
+          "} else {\r",
+          "    console.info(\"AUTH CHECK: No token found. Ensure you run 'Login' first for protected routes.\");\r",
+          "}\r",
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}
